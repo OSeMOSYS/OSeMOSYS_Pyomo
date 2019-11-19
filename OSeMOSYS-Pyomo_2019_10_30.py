@@ -418,7 +418,7 @@ def RateOfStorageCharge_rule(model,r,s,ls,ld,lh,y,t,m):
 model.RateOfStorageCharge_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, model.TECHNOLOGY, model.MODE_OF_OPERATION, rule=RateOfStorageCharge_rule)
 
 def RateOfStorageDischarge_rule(model,r,s,ls,ld,lh,y,t,m):
-	if 	model.TechnologyToStorage[r,t,s,m]>0 :
+	if 	model.TechnologyFromStorage[r,t,s,m]>0 :
 		return sum(model.RateOfActivity[r,l,t,m,y]*model.TechnologyFromStorage[r,t,s,m]*model.Conversionls[l,ls]*model.Conversionld[l,ld]*model.Conversionlh[l,lh] for m in model.MODE_OF_OPERATION for l in model.TIMESLICE for t in model.TECHNOLOGY) == model.RateOfStorageDischarge[r,s,ls,ld,lh,y]
 	else:
 		return Constraint.Skip
