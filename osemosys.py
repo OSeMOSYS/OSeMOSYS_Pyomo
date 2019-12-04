@@ -1,11 +1,11 @@
 # OSeMOSYS_2015_08_27
-# 
+#
 # Open Source energy MOdeling SYStem
 #
 # Main changes to previous version OSeMOSYS_2013_05_10
 #		- Removed the parameter TechWithCapacityNeededToMeetPeakTS from constraint CAa4_Constraint_Capacity
 #		- Fixed a bug related to using CapacityOfOneTechnologyUnit in constraint CAa5_TotalNewCapacity
-#		- Fixed a bug in the storage equations which caused an error if more than one day type was used 
+#		- Fixed a bug in the storage equations which caused an error if more than one day type was used
 #		- DiscountRate is no longer technology-specific. Therefore, DiscountRateStorage is now replaced by DiscountRate.
 #
 # ============================================================================
@@ -25,11 +25,11 @@
 #   limitations under the License.
 # ============================================================================
 #
-#  To run OSeMOSYS, enter the following line into your command prompt after replacing FILEPATH & YOURDATAFILE with your folder structure and data file name: 
+#  To run OSeMOSYS, enter the following line into your command prompt after replacing FILEPATH & YOURDATAFILE with your folder structure and data file name:
 #
 #  C:\...FILEPATH...\glpsol -m C:\...FILEPATH...\OSeMOSYS_2015_08_27.txt -d C:\...FILEPATH...\YOURDATAFILE.txt -o C:\...FILEPATH...\Results.txt
 #
-#  Alternatively, install GUSEK (http://gusek.sourceforge.net/gusek.html) and run the model within this integrated development environment (IDE). 
+#  Alternatively, install GUSEK (http://gusek.sourceforge.net/gusek.html) and run the model within this integrated development environment (IDE).
 #  To do so, open the .dat file and select "Use External .dat file" from the Options menu. Then change to the model file and select the "Go" icon or press F5.
 #
 #              			#########################################
@@ -48,7 +48,7 @@ model = AbstractModel()
 
 ###############
 #    Sets     #
-############### 
+###############
 
 model.YEAR = Set()
 model.TECHNOLOGY = Set()
@@ -131,13 +131,13 @@ model.TotalTechnologyAnnualActivityLowerLimit = Param(model.REGION, model.TECHNO
 model.TotalTechnologyModelPeriodActivityUpperLimit = Param(model.REGION, model.TECHNOLOGY, default=99999)
 model.TotalTechnologyModelPeriodActivityLowerLimit = Param(model.REGION, model.TECHNOLOGY, default=0)
 
-#########			Reserve Margin				############# 
+#########			Reserve Margin				#############
 
 model.ReserveMarginTagTechnology = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0)
 model.ReserveMarginTagFuel = Param(model.REGION, model.FUEL, model.YEAR, default=0)
 model.ReserveMargin = Param(model.REGION, model.YEAR, default=1)
 
-#########			RE Generation Target		############# 
+#########			RE Generation Target		#############
 
 model.RETagTechnology = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0)
 model.RETagFuel = Param(model.REGION, model.FUEL, model.YEAR, default=0)
@@ -182,7 +182,7 @@ model.SalvageValueStorage = Var(model.REGION, model.STORAGE, model.YEAR, domain=
 model.DiscountedSalvageValueStorage = Var(model.REGION, model.STORAGE, model.YEAR, domain=NonNegativeReals, initialize=0.0)
 model.TotalDiscountedStorageCost = Var(model.REGION, model.STORAGE, model.YEAR, domain=NonNegativeReals, initialize=0.0)
 
-#########		    Capacity Variables 			############# 
+#########		    Capacity Variables 			#############
 
 model.NumberOfNewTechnologyUnits = Var(model.REGION, model.TECHNOLOGY, model.YEAR, domain=NonNegativeIntegers, initialize=0)
 model.NewCapacity = Var(model.REGION, model.TECHNOLOGY, model.YEAR, domain=NonNegativeReals, initialize=0.0)
@@ -278,11 +278,11 @@ model.SpecifiedDemand = Constraint(model.REGION, model.FUEL, model.TIMESLICE, mo
 
 #########       	Capacity Adequacy A	     	#############
 
-	
+
 def TotalNewCapacity_1_rule(model,r,t,y):
 	return model.AccumulatedNewCapacity[r,t,y] == sum(model.NewCapacity[r,t,yy] for yy in model.YEAR if ((y-yy < model.OperationalLife[r,t]) and (y-yy >= 0)))
 model.TotalNewCapacity_1 = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalNewCapacity_1_rule)
-	
+
 def TotalAnnualCapacity_rule(model,r,t,y):
 	return model.AccumulatedNewCapacity[r,t,y] + model.ResidualCapacity[r,t,y] == model.TotalCapacityAnnual[r,t,y]
 model.TotalAnnualCapacity_constraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualCapacity_rule)
@@ -298,7 +298,7 @@ model.ConstraintCapacity = Constraint(model.REGION, model.TIMESLICE, model.TECHN
 # def TotalNewCapacity_2_rule(model,r,t,y):
 	# if model.CapacityOfOneTechnologyUnit != 0:
 		# return model.CapacityOfOneTechnologyUnit[r,t,y]*model.NumberOfNewTechnologyUnits[r,t,y] == model.NewCapacity[r,t,y]
-	# else: 
+	# else:
 		# Constraint.Skip
 # model.TotalNewCapacity_2 = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalNewCapacity_2_rule)
 
@@ -395,7 +395,7 @@ model.EnergyBalanceEachYear2 = Constraint(model.REGION, model.FUEL, model.YEAR, 
 def EnergyBalanceEachYear3_rule(model,r,rr,f,y):
 	return sum(model.Trade[r,rr,l,f,y] for l in model.TIMESLICE) == model.TradeAnnual[r,rr,f,y]
 model.EnergyBalanceEachYear3 = Constraint(model.REGION, model.REGION, model.FUEL, model.YEAR, rule=EnergyBalanceEachYear3_rule)
-	
+
 def EnergyBalanceEachYear4_rule(model,r,f,y):
 	return model.ProductionAnnual[r,f,y] >= model.UseAnnual[r,f,y] + sum(model.TradeAnnual[r,rr,f,y]*model.TradeRoute[r,rr,f,y] for rr in model.REGION) + model.AccumulatedAnnualDemand[r,f,y]
 model.EnergyBalanceEachYear4 = Constraint(model.REGION, model.FUEL, model.YEAR, rule=EnergyBalanceEachYear4_rule)
@@ -403,7 +403,7 @@ model.EnergyBalanceEachYear4 = Constraint(model.REGION, model.FUEL, model.YEAR, 
 
 #########        	Accounting Technology Production/Use	#############
 
-	
+
 def FuelProductionByTechnology_rule(model,r,l,t,f,y):
 	return model.RateOfProductionByTechnology[r,l,t,f,y]*model.YearSplit[l,y] == model.ProductionByTechnology[r,l,t,f,y]
 model.FuelProductionByTechnology = Constraint(model.REGION, model.TIMESLICE, model.TECHNOLOGY, model.FUEL, model.YEAR, rule=FuelProductionByTechnology_rule)
@@ -475,19 +475,19 @@ model.TotalDiscountedCost_constraint = Constraint(model.REGION, model.YEAR, rule
 
 #########      		Total Capacity Constraints 	##############
 
-def TotalAnnualMaxCapacityConstraint_rule(model,r,t,y): 
+def TotalAnnualMaxCapacityConstraint_rule(model,r,t,y):
 	return model.TotalCapacityAnnual[r,t,y] <= model.TotalAnnualMaxCapacity[r,t,y]
 model.TotalAnnualMaxCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMaxCapacityConstraint_rule)
 
-def TotalAnnualMinCapacityConstraint_rule(model,r,t,y): 
+def TotalAnnualMinCapacityConstraint_rule(model,r,t,y):
 	return model.TotalCapacityAnnual[r,t,y] >= model.TotalAnnualMinCapacity[r,t,y]
-model.TotalAnnualMinCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMinCapacityConstraint_rule)           
-										 
+model.TotalAnnualMinCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMinCapacityConstraint_rule)
+
 
 #########           Salvage Value            	#############
 
-def SalvageValueAtEndOfPeriod1_rule(model,r,t,y): 
-	if model.DepreciationMethod[r] == 1 and ((y + model.OperationalLife[r,t]-1) > max(model.YEAR)) and model.DiscountRate[r]>0: 
+def SalvageValueAtEndOfPeriod1_rule(model,r,t,y):
+	if model.DepreciationMethod[r] == 1 and ((y + model.OperationalLife[r,t]-1) > max(model.YEAR)) and model.DiscountRate[r]>0:
 		return model.SalvageValue[r,t,y] == model.CapitalCost[r,t,y]*model.NewCapacity[r,t,y]*(1-(((1+model.DiscountRate[r])**(max(model.YEAR)- y+1)-1)/((1+model.DiscountRate[r])**model.OperationalLife[r,t]-1)))
 	elif (model.DepreciationMethod[r] == 1 and ((y + model.OperationalLife[r,t]-1) > max(model.YEAR)) and model.DiscountRate[r] == 0) or (model.DepreciationMethod[r] == 2 and (y + model.OperationalLife[r,t]-1) > (max(model.YEAR))):
 		return model.SalvageValue[r,t,y] == model.CapitalCost[r,t,y]*model.NewCapacity[r,t,y]*(1-(max(model.YEAR)- y+1)/model.OperationalLife[r,t])
@@ -502,13 +502,13 @@ model.SalvageValueDiscountedToStartYear = Constraint(model.REGION, model.TECHNOL
 
 #########    		New Capacity Constraints  	##############
 
-def TotalAnnualMaxNewCapacityConstraint_rule(model,r,t,y): 
+def TotalAnnualMaxNewCapacityConstraint_rule(model,r,t,y):
 	return model.NewCapacity[r,t,y] <= model.TotalAnnualMaxCapacityInvestment[r,t,y]
 model.TotalAnnualMaxNewCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMaxNewCapacityConstraint_rule)
 
-def TotalAnnualMinNewCapacityConstraint_rule(model,r,t,y): 
+def TotalAnnualMinNewCapacityConstraint_rule(model,r,t,y):
 	return model.NewCapacity[r,t,y] >= model.TotalAnnualMinCapacityInvestment[r,t,y]
-model.TotalAnnualMinNewCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMinNewCapacityConstraint_rule)       
+model.TotalAnnualMinNewCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMinNewCapacityConstraint_rule)
 
 
 #########   		Annual Activity Constraints	##############
