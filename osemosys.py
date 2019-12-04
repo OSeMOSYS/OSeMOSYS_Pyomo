@@ -1,11 +1,11 @@
 # OSeMOSYS_2015_08_27
-# 
+#
 # Open Source energy MOdeling SYStem
 #
 # Main changes to previous version OSeMOSYS_2013_05_10
 #		- Removed the parameter TechWithCapacityNeededToMeetPeakTS from constraint CAa4_Constraint_Capacity
 #		- Fixed a bug related to using CapacityOfOneTechnologyUnit in constraint CAa5_TotalNewCapacity
-#		- Fixed a bug in the storage equations which caused an error if more than one day type was used 
+#		- Fixed a bug in the storage equations which caused an error if more than one day type was used
 #		- DiscountRate is no longer technology-specific. Therefore, DiscountRateStorage is now replaced by DiscountRate.
 #
 # ============================================================================
@@ -17,20 +17,7 @@
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-# ============================================================================
-#
-#  To run OSeMOSYS, enter the following line into your command prompt after replacing FILEPATH & YOURDATAFILE with your folder structure and data file name: 
-#
-#  C:\...FILEPATH...\glpsol -m C:\...FILEPATH...\OSeMOSYS_2015_08_27.txt -d C:\...FILEPATH...\YOURDATAFILE.txt -o C:\...FILEPATH...\Results.txt
-#
-#  Alternatively, install GUSEK (http://gusek.sourceforge.net/gusek.html) and run the model within this integrated development environment (IDE). 
-#  To do so, open the .dat file and select "Use External .dat file" from the Options menu. Then change to the model file and select the "Go" icon or press F5.
+
 #
 #              			#########################################
 ######################			Model Definition				#############
@@ -48,7 +35,7 @@ model = AbstractModel()
 
 ###############
 #    Sets     #
-############### 
+###############
 
 model.YEAR = Set()
 model.TECHNOLOGY = Set()
@@ -131,13 +118,13 @@ model.TotalTechnologyAnnualActivityLowerLimit = Param(model.REGION, model.TECHNO
 model.TotalTechnologyModelPeriodActivityUpperLimit = Param(model.REGION, model.TECHNOLOGY, default=99999)
 model.TotalTechnologyModelPeriodActivityLowerLimit = Param(model.REGION, model.TECHNOLOGY, default=0)
 
-#########			Reserve Margin				############# 
+#########			Reserve Margin				#############
 
 model.ReserveMarginTagTechnology = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0)
 model.ReserveMarginTagFuel = Param(model.REGION, model.FUEL, model.YEAR, default=0)
 model.ReserveMargin = Param(model.REGION, model.YEAR, default=1)
 
-#########			RE Generation Target		############# 
+#########			RE Generation Target		#############
 
 model.RETagTechnology = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0)
 model.RETagFuel = Param(model.REGION, model.FUEL, model.YEAR, default=0)
@@ -182,7 +169,7 @@ model.SalvageValueStorage = Var(model.REGION, model.STORAGE, model.YEAR, domain=
 model.DiscountedSalvageValueStorage = Var(model.REGION, model.STORAGE, model.YEAR, domain=NonNegativeReals, initialize=0.0)
 model.TotalDiscountedStorageCost = Var(model.REGION, model.STORAGE, model.YEAR, domain=NonNegativeReals, initialize=0.0)
 
-#########		    Capacity Variables 			############# 
+#########		    Capacity Variables 			#############
 
 model.NumberOfNewTechnologyUnits = Var(model.REGION, model.TECHNOLOGY, model.YEAR, domain=NonNegativeIntegers, initialize=0)
 model.NewCapacity = Var(model.REGION, model.TECHNOLOGY, model.YEAR, domain=NonNegativeReals, initialize=0.0)
@@ -260,7 +247,6 @@ model.ModelPeriodEmissions = Var(model.REGION, model.EMISSION, domain=NonNegativ
 # Objective Function #
 ######################
 
-
 def ObjectiveFunction_rule(model):
 	return sum(model.ModelPeriodCostByRegion[r] for r in model.REGION)
 model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
@@ -270,7 +256,6 @@ model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
 # Constraints       #
 #####################
 
-
 def SpecifiedDemand_rule(model,r,f,l,y):
 	return model.SpecifiedAnnualDemand[r,f,y]*model.SpecifiedDemandProfile[r,f,l,y]/model.YearSplit[l,y] == model.RateOfDemand[r,l,f,y]
 model.SpecifiedDemand = Constraint(model.REGION, model.FUEL, model.TIMESLICE, model.YEAR, rule=SpecifiedDemand_rule)
@@ -278,11 +263,11 @@ model.SpecifiedDemand = Constraint(model.REGION, model.FUEL, model.TIMESLICE, mo
 
 #########       	Capacity Adequacy A	     	#############
 
-	
+
 def TotalNewCapacity_1_rule(model,r,t,y):
 	return model.AccumulatedNewCapacity[r,t,y] == sum(model.NewCapacity[r,t,yy] for yy in model.YEAR if ((y-yy < model.OperationalLife[r,t]) and (y-yy >= 0)))
 model.TotalNewCapacity_1 = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalNewCapacity_1_rule)
-	
+
 def TotalAnnualCapacity_rule(model,r,t,y):
 	return model.AccumulatedNewCapacity[r,t,y] + model.ResidualCapacity[r,t,y] == model.TotalCapacityAnnual[r,t,y]
 model.TotalAnnualCapacity_constraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualCapacity_rule)
@@ -298,13 +283,12 @@ model.ConstraintCapacity = Constraint(model.REGION, model.TIMESLICE, model.TECHN
 # def TotalNewCapacity_2_rule(model,r,t,y):
 	# if model.CapacityOfOneTechnologyUnit != 0:
 		# return model.CapacityOfOneTechnologyUnit[r,t,y]*model.NumberOfNewTechnologyUnits[r,t,y] == model.NewCapacity[r,t,y]
-	# else: 
+	# else:
 		# Constraint.Skip
 # model.TotalNewCapacity_2 = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalNewCapacity_2_rule)
 
 
 #########       	Capacity Adequacy B		 	#############
-
 
 def PlannedMaintenance_rule(model,r,t,y):
 	return sum(model.RateOfTotalActivity[r,t,l,y]*model.YearSplit[l,y] for l in model.TIMESLICE) <= sum(model.TotalCapacityAnnual[r,t,y]*model.CapacityFactor[r,t,l,y]*model.YearSplit[l,y] for l in model.TIMESLICE)*model.AvailabilityFactor[r,t,y]*model.CapacityToActivityUnit[r,t]
@@ -313,21 +297,12 @@ model.PlannedMaintenance = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR
 
 #########	        Energy Balance A    	 	#############
 
-
 def RateOfFuelProduction1_rule(model,r,l,f,t,m,y):
 	if model.OutputActivityRatio[r,t,f,m,y] != 0:
 		return model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] == model.RateOfActivity[r,l,t,m,y]*model.OutputActivityRatio[r,t,f,m,y]
 	else:
 		return model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] == 0
 model.RateOfFuelProduction1 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, rule=RateOfFuelProduction1_rule)
-
-# def RateOfFuelProduction1_rule(model,r,l,f,t,m,y):
-	# return model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] == model.RateOfActivity[r,l,t,m,y]*model.OutputActivityRatio[r,t,f,m,y]
-# model.RateOfFuelProduction1 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, rule=RateOfFuelProduction1_rule)
-
-# def RateOfFuelProduction2_rule(model,r,l,f,t,y):
-	# return  model.RateOfProductionByTechnology[r,l,t,f,y] == sum(model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] for m in model.MODE_OF_OPERATION if model.OutputActivityRatio[r,t,f,m,y] != 0)
-# model.RateOfFuelProduction2 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.YEAR, rule=RateOfFuelProduction2_rule)
 
 def RateOfFuelProduction2_rule(model,r,l,f,t,y):
 	return  model.RateOfProductionByTechnology[r,l,t,f,y] == sum(model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] for m in model.MODE_OF_OPERATION)
@@ -337,20 +312,9 @@ def RateOfFuelProduction3_rule(model,r,l,f,y):
 	return model.RateOfProduction[r,l,f,y] == sum(model.RateOfProductionByTechnology[r,l,t,f,y] for t in model.TECHNOLOGY)
 model.RateOfFuelProduction3 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.YEAR, rule=RateOfFuelProduction3_rule)
 
-# def RateOfFuelUse1_rule(model,r,l,f,t,m,y):
-	# if model.InputActivityRatio[r,t,f,m,y] != 0:
-		# return model.RateOfActivity[r,l,t,m,y]*model.InputActivityRatio[r,t,f,m,y] == model.RateOfUseByTechnologyByMode[r,l,t,m,f,y]
-	# else:
-		# return model.RateOfUseByTechnologyByMode[r,l,t,m,f,y] == 0
-# model.RateOfFuelUse1 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, rule=RateOfFuelUse1_rule)
-
 def RateOfFuelUse1_rule(model,r,l,f,t,m,y):
 	return model.RateOfActivity[r,l,t,m,y]*model.InputActivityRatio[r,t,f,m,y] == model.RateOfUseByTechnologyByMode[r,l,t,m,f,y]
 model.RateOfFuelUse1 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, rule=RateOfFuelUse1_rule)
-
-# def RateOfFuelUse2_rule(model,r,l,f,t,y):
-	# return model.RateOfUseByTechnology[r,l,t,f,y] == sum(model.RateOfUseByTechnologyByMode[r,l,t,m,f,y] for m in model.MODE_OF_OPERATION if model.InputActivityRatio[r,t,f,m,y] != 0)
-# model.RateOfFuelUse2 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.YEAR, rule=RateOfFuelUse2_rule)
 
 def RateOfFuelUse2_rule(model,r,l,f,t,y):
 	return model.RateOfUseByTechnology[r,l,t,f,y] == sum(model.RateOfUseByTechnologyByMode[r,l,t,m,f,y] for m in model.MODE_OF_OPERATION)
@@ -383,7 +347,6 @@ model.EnergyBalanceEachTS5 = Constraint(model.REGION, model.TIMESLICE, model.FUE
 
 #########        	Energy Balance B		 	#############
 
-
 def EnergyBalanceEachYear1_rule(model,r,f,y):
 	return sum(model.Production[r,l,f,y] for l in model.TIMESLICE) == model.ProductionAnnual[r,f,y]
 model.EnergyBalanceEachYear1 = Constraint(model.REGION, model.FUEL, model.YEAR, rule=EnergyBalanceEachYear1_rule)
@@ -395,7 +358,7 @@ model.EnergyBalanceEachYear2 = Constraint(model.REGION, model.FUEL, model.YEAR, 
 def EnergyBalanceEachYear3_rule(model,r,rr,f,y):
 	return sum(model.Trade[r,rr,l,f,y] for l in model.TIMESLICE) == model.TradeAnnual[r,rr,f,y]
 model.EnergyBalanceEachYear3 = Constraint(model.REGION, model.REGION, model.FUEL, model.YEAR, rule=EnergyBalanceEachYear3_rule)
-	
+
 def EnergyBalanceEachYear4_rule(model,r,f,y):
 	return model.ProductionAnnual[r,f,y] >= model.UseAnnual[r,f,y] + sum(model.TradeAnnual[r,rr,f,y]*model.TradeRoute[r,rr,f,y] for rr in model.REGION) + model.AccumulatedAnnualDemand[r,f,y]
 model.EnergyBalanceEachYear4 = Constraint(model.REGION, model.FUEL, model.YEAR, rule=EnergyBalanceEachYear4_rule)
@@ -403,7 +366,6 @@ model.EnergyBalanceEachYear4 = Constraint(model.REGION, model.FUEL, model.YEAR, 
 
 #########        	Accounting Technology Production/Use	#############
 
-	
 def FuelProductionByTechnology_rule(model,r,l,t,f,y):
 	return model.RateOfProductionByTechnology[r,l,t,f,y]*model.YearSplit[l,y] == model.ProductionByTechnology[r,l,t,f,y]
 model.FuelProductionByTechnology = Constraint(model.REGION, model.TIMESLICE, model.TECHNOLOGY, model.FUEL, model.YEAR, rule=FuelProductionByTechnology_rule)
@@ -420,13 +382,8 @@ def ModelPeriodCostByRegion_rule(model,r):
 	return model.ModelPeriodCostByRegion[r] == sum(model.TotalDiscountedCost[r,y] for y in model.YEAR)
 model.ModelPeriodCostByRegion_constraint = Constraint(model.REGION, rule=ModelPeriodCostByRegion_rule)
 
-# def ModelPeriodCost_rule(model):
-	# return model.ModelPeriodCost == sum(model.ModelPeriodCostByRegion[r] for r in model.REGION)
-# model.ModelPeriodCost_Constraint = Constraint(rule=ModelPeriodCost_rule)
-
 
 #########       	Capital Costs 		     	#############
-
 
 def UndiscountedCapitalInvestment_rule(model,r,t,y):
 	return model.CapitalCost[r,t,y]*model.NewCapacity[r,t,y] == model.CapitalInvestment[r,t,y]
@@ -438,7 +395,6 @@ model.DiscountedCapitalInvestment_constraint = Constraint(model.REGION, model.TE
 
 
 #########        	Operating Costs 		 	#############
-
 
 def OperatingCostsVariable_rule(model,r,t,l,y):
 	return sum(model.TotalAnnualTechnologyActivityByMode[r,t,m,y]*model.VariableCost[r,t,m,y] for m in model.MODE_OF_OPERATION) == model.AnnualVariableOperatingCost[r,t,y]
@@ -459,35 +415,28 @@ model.DiscountedOperatingCostsTotalAnnual = Constraint(model.REGION, model.TECHN
 
 #########       	Total Discounted Costs	 	#############
 
-
 def TotalDiscountedCostByTechnology_rule(model,r,t,y):
 	return model.DiscountedOperatingCost[r,t,y] + model.DiscountedCapitalInvestment[r,t,y] + model.DiscountedTechnologyEmissionsPenalty[r,t,y] - model.DiscountedSalvageValue[r,t,y] == model.TotalDiscountedCostByTechnology[r,t,y]
 model.TotalDiscountedCostByTechnology_constraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalDiscountedCostByTechnology_rule)
-
-# def TotalDiscountedCost_rule(model,r,y):
-	# return sum(model.TotalDiscountedCostByTechnology[r,t,y] for t in model.TECHNOLOGY) + sum(model.TotalDiscountedStorageCost[r,s,y] for s in model.STORAGE) == model.TotalDiscountedCost[r,y]
-# model.TotalDiscountedCost_constraint = Constraint(model.REGION, model.YEAR, rule=TotalDiscountedCost_rule)
 
 def TotalDiscountedCost_rule(model,r,y):
 	return sum(model.TotalDiscountedCostByTechnology[r,t,y] for t in model.TECHNOLOGY) == model.TotalDiscountedCost[r,y]
 model.TotalDiscountedCost_constraint = Constraint(model.REGION, model.YEAR, rule=TotalDiscountedCost_rule)
 
-
 #########      		Total Capacity Constraints 	##############
 
-def TotalAnnualMaxCapacityConstraint_rule(model,r,t,y): 
+def TotalAnnualMaxCapacityConstraint_rule(model,r,t,y):
 	return model.TotalCapacityAnnual[r,t,y] <= model.TotalAnnualMaxCapacity[r,t,y]
 model.TotalAnnualMaxCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMaxCapacityConstraint_rule)
 
-def TotalAnnualMinCapacityConstraint_rule(model,r,t,y): 
+def TotalAnnualMinCapacityConstraint_rule(model,r,t,y):
 	return model.TotalCapacityAnnual[r,t,y] >= model.TotalAnnualMinCapacity[r,t,y]
-model.TotalAnnualMinCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMinCapacityConstraint_rule)           
-										 
+model.TotalAnnualMinCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMinCapacityConstraint_rule)
 
 #########           Salvage Value            	#############
 
-def SalvageValueAtEndOfPeriod1_rule(model,r,t,y): 
-	if model.DepreciationMethod[r] == 1 and ((y + model.OperationalLife[r,t]-1) > max(model.YEAR)) and model.DiscountRate[r]>0: 
+def SalvageValueAtEndOfPeriod1_rule(model,r,t,y):
+	if model.DepreciationMethod[r] == 1 and ((y + model.OperationalLife[r,t]-1) > max(model.YEAR)) and model.DiscountRate[r]>0:
 		return model.SalvageValue[r,t,y] == model.CapitalCost[r,t,y]*model.NewCapacity[r,t,y]*(1-(((1+model.DiscountRate[r])**(max(model.YEAR)- y+1)-1)/((1+model.DiscountRate[r])**model.OperationalLife[r,t]-1)))
 	elif (model.DepreciationMethod[r] == 1 and ((y + model.OperationalLife[r,t]-1) > max(model.YEAR)) and model.DiscountRate[r] == 0) or (model.DepreciationMethod[r] == 2 and (y + model.OperationalLife[r,t]-1) > (max(model.YEAR))):
 		return model.SalvageValue[r,t,y] == model.CapitalCost[r,t,y]*model.NewCapacity[r,t,y]*(1-(max(model.YEAR)- y+1)/model.OperationalLife[r,t])
@@ -499,17 +448,15 @@ def SalvageValueDiscountedToStartYear_rule(model,r,t,y):
 	return model.DiscountedSalvageValue[r,t,y] == model.SalvageValue[r,t,y]/((1+model.DiscountRate[r])**(1+max(model.YEAR)-min(model.YEAR)))
 model.SalvageValueDiscountedToStartYear = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=SalvageValueDiscountedToStartYear_rule)
 
-
 #########    		New Capacity Constraints  	##############
 
-def TotalAnnualMaxNewCapacityConstraint_rule(model,r,t,y): 
+def TotalAnnualMaxNewCapacityConstraint_rule(model,r,t,y):
 	return model.NewCapacity[r,t,y] <= model.TotalAnnualMaxCapacityInvestment[r,t,y]
 model.TotalAnnualMaxNewCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMaxNewCapacityConstraint_rule)
 
-def TotalAnnualMinNewCapacityConstraint_rule(model,r,t,y): 
+def TotalAnnualMinNewCapacityConstraint_rule(model,r,t,y):
 	return model.NewCapacity[r,t,y] >= model.TotalAnnualMinCapacityInvestment[r,t,y]
-model.TotalAnnualMinNewCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMinNewCapacityConstraint_rule)       
-
+model.TotalAnnualMinNewCapacityConstraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualMinNewCapacityConstraint_rule)
 
 #########   		Annual Activity Constraints	##############
 
@@ -597,320 +544,3 @@ ReserveMargin_FuelsIncluded = Constraint(model.REGION, model.TIMESLICE, model.YE
 def ReserveMarginConstraint_rule(model,r,l,y):
 	return model.DemandNeedingReserveMargin[r,l,y]*model.ReserveMargin[r,y] <= model.TotalCapacityInReserveMargin[r,y]
 ReserveMarginConstraint = Constraint(model.REGION, model.TIMESLICE, model.YEAR, rule=ReserveMarginConstraint_rule)
-
-
-# modeldata = ModelData()
-# modeldata.add = ('OSeMOSYS_2015_08_27_Pyomo.dat')
-# modeldata.read(model)
-
-opt = SolverFactory('glpk')
-
-instance = model.create_instance('UTOPIA_2015_08_27.dat')
-results = opt.solve(instance)
-# results.write()
-#model.solutions.load_from(results)
-instance.write('problem.lp', io_options={'symbolic_solver_labels':True})
-
-# def pyomo_postprocess(options=None,instance=None,results=None):
-	# instance.solutions.load_from(results)
-	# with open('C:\OSeMOSYS_Pyomo\pyomo_test_2015-08-27.txt', 'w') as f:
-		# f.write ('{} {} {}\n'.format("objective ", value(instance.OBJ)))
-		# for v in instance.component_objects(Var, active=True):
-			# varobject = getattr(instance, str(v))
-			# for index in varobject:
-				# f.write ('{} {}\n'.format(v, varobject[index].value))
-	# close()
-
-		
-# instance = model.create_instance()
-#instance.display()
-
-#############################################################
-
-#########   		RE Production Target		############## NTS: Should change demand for production
-#
-# s.t. RE1_FuelProductionByTechnologyAnnual{model.REGION, model.TECHNOLOGY, model.FUEL, model.YEAR}: sum{model.TIMESLICE} ProductionByTechnology[r,l,t,f,y] = ProductionByTechnologyAnnual[r,t,f,y];
-# s.t. RE2_TechIncluded{model.REGION, model.YEAR}: sum{model.TECHNOLOGY, model.FUEL} ProductionByTechnologyAnnual[r,t,f,y]*RETagTechnology[r,t,y] = TotalREProductionAnnual[r,y];
-# s.t. RE3_FuelIncluded{model.REGION, model.YEAR}: sum{model.TIMESLICE, model.FUEL} RateOfDemand[r,l,f,y]*YearSplit[l,y]*RETagFuel[r,f,y] = RETotalDemandOfTargetFuelAnnual[r,y]; 
-# s.t. RE4_EnergyConstraint{model.REGION, model.YEAR}:REMinProductionTarget[r,y]*RETotalDemandOfTargetFuelAnnual[r,y] <= TotalREProductionAnnual[r,y];
-# s.t. RE5_FuelUseByTechnologyAnnual{model.REGION, model.TECHNOLOGY, model.FUEL, model.YEAR}: sum{model.TIMESLICE} RateOfUseByTechnology[r,l,t,f,y]*YearSplit[l,y] = UseByTechnologyAnnual[r,t,f,y];
-#
-###########################################################################################
-#
-#solve;
-#
-#########################################################################################################
-#																										#
-# 	Summary results tables below are printed to a comma-separated file called "SelectedResults.csv"		#
-#	For a full set of results please see "Results.txt"													#
-#	If you don't want these printed, please comment-out or delete them.									#
-#																										#
-#########################################################################################################
-#
-#	table result{(f,t) in s} OUT "...": f~FROM, t~TO, x[f,t]~FLOW;
-#	table result{model.YEAR, model.REGION} OUT "CSV" "Output.csv": y~YEARS, r~REGION, TotalDiscountedCost[y,r];
-#
-####	Summary results 	###
-#
-###		Total costs and emissions by region	###
-#
-# printf "\n" > "SelectedResults.csv";
-# printf "Summary" >> "SelectedResults.csv";
-# for {model.REGION} 	{printf ",%s", r >> "SelectedResults.csv";
-					# }
-# printf "\n" >> "SelectedResults.csv";
-# printf "Emissions" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# for {model.REGION} 	{
-					# for {model.EMISSION} 	{
-											# printf ",%s", e >> "SelectedResults.csv";
-											# printf ",%g", ModelPeriodEmissions[r,e] >> "SelectedResults.csv";
-											# printf "\n" >> "SelectedResults.csv";
-											# }
-					# }
-# printf "\n" >> "SelectedResults.csv";
-# printf "Cost" >> "SelectedResults.csv";
-# for {model.REGION} {printf ",%g", ModelPeriodCostByRegion[r] >> "SelectedResults.csv";
-# }
-# printf "\n" >> "SelectedResults.csv";
-# #
-# ### 	Time Independent demand	###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "TID Demand" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-	# for {model.REGION} 	{printf ",%s", r >> "SelectedResults.csv";
-						# printf "\n" >> "SelectedResults.csv";
-						# for {model.FUEL} {printf "\n" >> "SelectedResults.csv";
-										# printf ",%s", f >> "SelectedResults.csv";
-										# printf "\n" >> "SelectedResults.csv";
-										# for {model.YEAR } 	{
-															# printf "%g", y >> "SelectedResults.csv";
-															# printf ",%g", AccumulatedAnnualDemand[r,f,y] >> "SelectedResults.csv";
-															# printf "\n" >> "SelectedResults.csv";
-															# }
-											# }
-						# }
-# #
-# ### 	Time Dependent demand	###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "Time Dependent Demand (Energy Units)" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-	# for {model.REGION} {printf ",%s", r >> "SelectedResults.csv";
-						# printf "\n" >> "SelectedResults.csv";
-						# for {model.FUEL} {printf ",%s", f >> "SelectedResults.csv";
-										# printf "\n" >> "SelectedResults.csv";
-										# for {model.TIMESLICE}	{
-																# printf ",%s", l >> "SelectedResults.csv";
-																# }
-										# printf "\n" >> "SelectedResults.csv";
-										# for {model.YEAR } 	{
-															# printf "%g", y >> "SelectedResults.csv";
-															# for { model.TIMESLICE} 	{
-																					# printf ",%g", RateOfDemand[r,l,f,y]*YearSplit[l,y] >> "SelectedResults.csv";
-																					# }
-															# printf "\n" >> "SelectedResults.csv";
-															# }
-										# }
-						# }
-# #
-# ### 	Time Dependent production ###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "Time Dependent Production (Energy Units) Test" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-	# for {model.REGION} {printf ",%s", r >> "SelectedResults.csv";
-						# printf "\n" >> "SelectedResults.csv";
-						# for {model.FUEL} {printf ",%s", f >> "SelectedResults.csv";
-										# printf "\n" >> "SelectedResults.csv";
-										# for {model.TIMESLICE}	{
-																# printf ",%s", l >> "SelectedResults.csv";
-																# }
-										# printf "\n" >> "SelectedResults.csv";
-										# for {model.YEAR } 	{
-															# printf "%g", y >> "SelectedResults.csv";
-															# for { model.TIMESLICE} 	{
-																					# printf ",%g", Production[r,l,f,y] >> "SelectedResults.csv";
-																					# }
-															# printf "\n" >> "SelectedResults.csv";
-															# }
-										# }
-						# }
-# #
-# ####	Total Annual Capacity	###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "TotalAnnualCapacity (Capacity Units)" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# for {model.TECHNOLOGY} {printf ",%s", t >> "SelectedResults.csv";}
-# printf "\n" >> "SelectedResults.csv";
-# for {model.REGION}	{
-		# for { model.YEAR } {
-							# printf "%g", y >> "SelectedResults.csv";
-							# for { model.TECHNOLOGY } {
-													# printf ",%g", TotalCapacityAnnual[r,t,y] >> "SelectedResults.csv";
-													# }
-							# printf "\n" >> "SelectedResults.csv";
-							# }
-					# }
-# #
-# ####	New Annual Capacity	###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "NewCapacity (Capacity Units )" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# for {model.TECHNOLOGY} 	{printf ",%s", t >> "SelectedResults.csv";}
-# printf "\n" >> "SelectedResults.csv";
-# for {model.REGION}	{
-					# for { model.YEAR } 	{
-										# printf "%g", y >> "SelectedResults.csv";
-										# for { model.TECHNOLOGY } 	{
-																	# printf ",%g", NewCapacity[r,t,y] >> "SelectedResults.csv";
-																	# }
-										# printf "\n" >> "SelectedResults.csv";
-										# }
-					# }
-# #
-# ### Annual Production ###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# printf "Annual Production (Energy Units)" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# for {model.REGION} 	{printf ",%s", r >> "SelectedResults.csv";
-					# printf "\n" >> "SelectedResults.csv";
-					# for {model.TECHNOLOGY} 	{printf "%s", t >> "SelectedResults.csv";
-											# for {model.FUEL}{printf",%s",f >> "SelectedResults.csv";
-															# }
-											# printf "\n" >> "SelectedResults.csv";
-											# for {model.YEAR } 	{
-																# printf "%g", y >> "SelectedResults.csv";
-																# for {model.FUEL}{
-																				# printf ",%g", ProductionByTechnologyAnnual[r,t,f,y] >> "SelectedResults.csv";
-																				# }
-																# printf "\n" >> "SelectedResults.csv";
-																# }
-						# printf "\n" >> "SelectedResults.csv";
-											# }
-					# }
-# #
-# ### Annual Use ###
-# #
-# printf "Annual Use (Energy Units)" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# for {model.REGION} {printf ",%s", r >> "SelectedResults.csv";
-					# printf "\n" >> "SelectedResults.csv";
-					# for {model.TECHNOLOGY} 	{printf "%s", t >> "SelectedResults.csv";
-											# for {model.FUEL}{printf",%s",f >> "SelectedResults.csv";
-															# }
-											# printf "\n" >> "SelectedResults.csv";
-											# for {model.YEAR } 	{
-																# printf "%g", y >> "SelectedResults.csv";
-																# for {model.FUEL}{
-																				# printf ",%g", UseByTechnologyAnnual[r,t,f,y] >> "SelectedResults.csv";
-																				# }
-																# printf "\n" >> "SelectedResults.csv";
-																# }
-						# printf "\n" >> "SelectedResults.csv";
-											# }
-					# }
-# #
-# ###		Technology Production in each TS ###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "ProductionByTechnology (Energy Units)" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# for {model.REGION} {printf ",%s", r >> "SelectedResults.csv";
-	# printf "\n" >> "SelectedResults.csv";
-	# for {model.TECHNOLOGY} {printf "%s", t >> "SelectedResults.csv";
-					# for {model.FUEL}{printf",%s",f >> "SelectedResults.csv";
-						# for {model.TIMESLICE}{
-							# printf ",%s", l >> "SelectedResults.csv";
-						# }
-					# }
-					# printf "\n" >> "SelectedResults.csv";
-					# for {model.YEAR } {
-						# printf "%g", y >> "SelectedResults.csv";
-						# for {model.FUEL}{printf "," >> "SelectedResults.csv";
-							# for { model.TIMESLICE} {
-										# printf ",%g", ProductionByTechnology[r,l,t,f,y] >> "SelectedResults.csv";
-								# }
-						# }
-						# printf "\n" >> "SelectedResults.csv";
-					# }
-	# }
-# }
-# #
-# ###		Technology Use in each TS	###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "Use By Technology (Energy Units)" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# for {model.REGION} {printf ",%s", r >> "SelectedResults.csv";
-	# printf "\n" >> "SelectedResults.csv";
-	# for {model.TECHNOLOGY} {printf "%s", t >> "SelectedResults.csv";
-					# for {model.FUEL}{printf",%s",f >> "SelectedResults.csv";
-						# for {model.TIMESLICE}{
-							# printf ",%s", l >> "SelectedResults.csv";
-						# }
-					# }
-					# printf "\n" >> "SelectedResults.csv";
-					# for {model.YEAR } {
-						# printf "%g", y >> "SelectedResults.csv";
-						# for {model.FUEL}{printf "," >> "SelectedResults.csv";
-							# for { model.TIMESLICE} {
-										# printf ",%g", UseByTechnology[r,l,t,f,y] >> "SelectedResults.csv";
-								# }
-						# }
-						# printf "\n" >> "SelectedResults.csv";
-					# }
-	# }
-# }
-# #
-# ###		Total Annual Emissions	###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "Annual Emissions (Emissions Units)" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-	# for {model.REGION} 	{printf ",%s", r >> "SelectedResults.csv";
-						# printf "\n" >> "SelectedResults.csv";
-						# for {model.EMISSION} 	{printf ",%s", e >> "SelectedResults.csv";
-												# printf "\n" >> "SelectedResults.csv";
-												# printf "\n" >> "SelectedResults.csv";
-												# for {model.YEAR } 	{
-																	# printf "%g", y >> "SelectedResults.csv";
-																	# printf ",%g", AnnualEmissions[r,e,y]>> "SelectedResults.csv";
-																	# printf "\n" >> "SelectedResults.csv";
-																	# }
-												# }
-						# }
-# #
-# ### Annual Emissions by Technology ###
-# #
-# printf "\n" >> "SelectedResults.csv";
-# printf "Annual Emissions by Technology (Emissions Units)" >> "SelectedResults.csv";
-# printf "\n" >> "SelectedResults.csv";
-# for {model.REGION} {printf ",%s", r >> "SelectedResults.csv";
-					# printf "\n" >> "SelectedResults.csv";
-					# for {model.TECHNOLOGY} 	{printf "%s", t >> "SelectedResults.csv";
-											# for {model.EMISSION}{printf",%s",e >> "SelectedResults.csv";
-															# }
-											# printf "\n" >> "SelectedResults.csv";
-											# for {model.YEAR } 	{
-																# printf "%g", y >> "SelectedResults.csv";
-																# for {model.EMISSION}{
-																				# printf ",%g", AnnualTechnologyEmission[r,t,e,y] >> "SelectedResults.csv";
-																				# }
-																# printf "\n" >> "SelectedResults.csv";
-																# }
-						# printf "\n" >> "SelectedResults.csv";
-											# }
-					# }						
-# end;
