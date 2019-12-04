@@ -17,20 +17,7 @@
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-# ============================================================================
-#
-#  To run OSeMOSYS, enter the following line into your command prompt after replacing FILEPATH & YOURDATAFILE with your folder structure and data file name:
-#
-#  C:\...FILEPATH...\glpsol -m C:\...FILEPATH...\OSeMOSYS_2015_08_27.txt -d C:\...FILEPATH...\YOURDATAFILE.txt -o C:\...FILEPATH...\Results.txt
-#
-#  Alternatively, install GUSEK (http://gusek.sourceforge.net/gusek.html) and run the model within this integrated development environment (IDE).
-#  To do so, open the .dat file and select "Use External .dat file" from the Options menu. Then change to the model file and select the "Go" icon or press F5.
+
 #
 #              			#########################################
 ######################			Model Definition				#############
@@ -321,14 +308,6 @@ def RateOfFuelProduction1_rule(model,r,l,f,t,m,y):
 		return model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] == 0
 model.RateOfFuelProduction1 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, rule=RateOfFuelProduction1_rule)
 
-# def RateOfFuelProduction1_rule(model,r,l,f,t,m,y):
-	# return model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] == model.RateOfActivity[r,l,t,m,y]*model.OutputActivityRatio[r,t,f,m,y]
-# model.RateOfFuelProduction1 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, rule=RateOfFuelProduction1_rule)
-
-# def RateOfFuelProduction2_rule(model,r,l,f,t,y):
-	# return  model.RateOfProductionByTechnology[r,l,t,f,y] == sum(model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] for m in model.MODE_OF_OPERATION if model.OutputActivityRatio[r,t,f,m,y] != 0)
-# model.RateOfFuelProduction2 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.YEAR, rule=RateOfFuelProduction2_rule)
-
 def RateOfFuelProduction2_rule(model,r,l,f,t,y):
 	return  model.RateOfProductionByTechnology[r,l,t,f,y] == sum(model.RateOfProductionByTechnologyByMode[r,l,t,m,f,y] for m in model.MODE_OF_OPERATION)
 model.RateOfFuelProduction2 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.YEAR, rule=RateOfFuelProduction2_rule)
@@ -337,20 +316,9 @@ def RateOfFuelProduction3_rule(model,r,l,f,y):
 	return model.RateOfProduction[r,l,f,y] == sum(model.RateOfProductionByTechnology[r,l,t,f,y] for t in model.TECHNOLOGY)
 model.RateOfFuelProduction3 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.YEAR, rule=RateOfFuelProduction3_rule)
 
-# def RateOfFuelUse1_rule(model,r,l,f,t,m,y):
-	# if model.InputActivityRatio[r,t,f,m,y] != 0:
-		# return model.RateOfActivity[r,l,t,m,y]*model.InputActivityRatio[r,t,f,m,y] == model.RateOfUseByTechnologyByMode[r,l,t,m,f,y]
-	# else:
-		# return model.RateOfUseByTechnologyByMode[r,l,t,m,f,y] == 0
-# model.RateOfFuelUse1 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, rule=RateOfFuelUse1_rule)
-
 def RateOfFuelUse1_rule(model,r,l,f,t,m,y):
 	return model.RateOfActivity[r,l,t,m,y]*model.InputActivityRatio[r,t,f,m,y] == model.RateOfUseByTechnologyByMode[r,l,t,m,f,y]
 model.RateOfFuelUse1 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, rule=RateOfFuelUse1_rule)
-
-# def RateOfFuelUse2_rule(model,r,l,f,t,y):
-	# return model.RateOfUseByTechnology[r,l,t,f,y] == sum(model.RateOfUseByTechnologyByMode[r,l,t,m,f,y] for m in model.MODE_OF_OPERATION if model.InputActivityRatio[r,t,f,m,y] != 0)
-# model.RateOfFuelUse2 = Constraint(model.REGION, model.TIMESLICE, model.FUEL, model.TECHNOLOGY, model.YEAR, rule=RateOfFuelUse2_rule)
 
 def RateOfFuelUse2_rule(model,r,l,f,t,y):
 	return model.RateOfUseByTechnology[r,l,t,f,y] == sum(model.RateOfUseByTechnologyByMode[r,l,t,m,f,y] for m in model.MODE_OF_OPERATION)
@@ -420,10 +388,6 @@ def ModelPeriodCostByRegion_rule(model,r):
 	return model.ModelPeriodCostByRegion[r] == sum(model.TotalDiscountedCost[r,y] for y in model.YEAR)
 model.ModelPeriodCostByRegion_constraint = Constraint(model.REGION, rule=ModelPeriodCostByRegion_rule)
 
-# def ModelPeriodCost_rule(model):
-	# return model.ModelPeriodCost == sum(model.ModelPeriodCostByRegion[r] for r in model.REGION)
-# model.ModelPeriodCost_Constraint = Constraint(rule=ModelPeriodCost_rule)
-
 
 #########       	Capital Costs 		     	#############
 
@@ -463,10 +427,6 @@ model.DiscountedOperatingCostsTotalAnnual = Constraint(model.REGION, model.TECHN
 def TotalDiscountedCostByTechnology_rule(model,r,t,y):
 	return model.DiscountedOperatingCost[r,t,y] + model.DiscountedCapitalInvestment[r,t,y] + model.DiscountedTechnologyEmissionsPenalty[r,t,y] - model.DiscountedSalvageValue[r,t,y] == model.TotalDiscountedCostByTechnology[r,t,y]
 model.TotalDiscountedCostByTechnology_constraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalDiscountedCostByTechnology_rule)
-
-# def TotalDiscountedCost_rule(model,r,y):
-	# return sum(model.TotalDiscountedCostByTechnology[r,t,y] for t in model.TECHNOLOGY) + sum(model.TotalDiscountedStorageCost[r,s,y] for s in model.STORAGE) == model.TotalDiscountedCost[r,y]
-# model.TotalDiscountedCost_constraint = Constraint(model.REGION, model.YEAR, rule=TotalDiscountedCost_rule)
 
 def TotalDiscountedCost_rule(model,r,y):
 	return sum(model.TotalDiscountedCostByTechnology[r,t,y] for t in model.TECHNOLOGY) == model.TotalDiscountedCost[r,y]
