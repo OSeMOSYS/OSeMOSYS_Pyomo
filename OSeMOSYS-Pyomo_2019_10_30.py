@@ -34,7 +34,7 @@
 ##
 #  To run OSeMOSYS, enter the following line into your command prompt after replacing FILEPATH & YOURDATAFILE with your folder structure and data file name:
 #
-#	pyomo solve --solver=glpk C:\...FILEPATH...\OSeMOSYS-Pyomo_2019_10_30.py C:\...FILEPATH...\YOURDATFILE.dat
+#	pyomo solve --solver=glpk OSeMOSYS_Python\OSeMOSYS-Pyomo_2019_10_30.py OSeMOSYS_Python\UTOPIA_2015_08_27.dat
 #
 #
 #              			#########################################
@@ -467,7 +467,7 @@ def StorageLevelDayTypeFinish_rule(model, r, s, ls, ld, y):
 		else:
 			return model.StorageLevelSeasonStart[r,s,ls+1,y] == model.StorageLevelDayTypeFinish[r,s,ls,ld,y]
 	else:
-		return model.StorageLevelDayTypeFinish[r,s,ls,ld+1,y]-sum(model.NetChargeWithinDay[r,s,ls,ld+1,lh,y] for lh in model.DAILYTIMEBRACKET)*model.DaysInDayType[ls,ld+1,y]
+		return model.StorageLevelDayTypeFinish[r,s,ls,ld+1,y]-sum(model.NetChargeWithinDay[r,s,ls,ld+1,lh,y] for lh in model.DAILYTIMEBRACKET)*model.DaysInDayType[ls,ld+1,y] == model.StorageLevelDayTypeFinish[r,s,ls,ld,y]
 model.StorageLevelDayTypeFinish_constraint=Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.YEAR, rule=StorageLevelDayTypeFinish_rule)
 
 
@@ -491,7 +491,7 @@ model.LowerLimit_EndDaylyTimeBracketLastInstanceOfDayTypeLastWeek_constraint= Co
 
 def LowerLimit_1TimeBracket1InstanceOfDayTypeLastweek_rule(model, r, s, ls, ld, lh, y):
 	if ld> min(model.DAYTYPE):
-		return 0 <= (model.StorageLevelDayTypeFinish[r,s,ls,ld-1,y]+sum(model.NetChangeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh-lhlh>0)))-model.StorageLowerLimit[r,s,y]
+		return 0 <= (model.StorageLevelDayTypeFinish[r,s,ls,ld-1,y]+sum(model.NetChargeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh-lhlh>0)))-model.StorageLowerLimit[r,s,y]
 	else:
 		return Constraint.Skip
 model.LowerLimit_1TimeBracket1InstanceOfDayTypeLastweek_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=LowerLimit_1TimeBracket1InstanceOfDayTypeLastweek_rule)
@@ -513,7 +513,7 @@ model.UpperLimit_EndDaylyTimeBracketLastInstanceOfDayTypeLastWeek_constraint= Co
 
 def UpperLimit_1TimeBracket1InstanceOfDayTypeLastweek_rule(model, r, s, ls, ld, lh, y):
 	if ld> min(model.DAYTYPE):
-		return 0 <= (model.StorageLevelDayTypeFinish[r,s,ls,ld-1,y]+sum(model.NetChangeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh-lhlh>0)))-model.StorageUpperLimit[r,s,y]
+		return 0 <= (model.StorageLevelDayTypeFinish[r,s,ls,ld-1,y]+sum(model.NetChargeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh-lhlh>0)))-model.StorageUpperLimit[r,s,y]
 	else:
 		return Constraint.Skip
 model.UpperLimit_1TimeBracket1InstanceOfDayTypeLastweek_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=UpperLimit_1TimeBracket1InstanceOfDayTypeLastweek_rule)
