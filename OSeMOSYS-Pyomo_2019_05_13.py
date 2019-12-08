@@ -100,8 +100,8 @@ model.AccumulatedAnnualDemand = Param(model.REGION, model.FUEL, model.YEAR, defa
 #########			Performance					#############
 
 model.CapacityToActivityUnit = Param(model.REGION, model.TECHNOLOGY, default=1)
-model.CapacityFactor = Param(model.REGION, model.TECHNOLOGY, model.TIMESLICE, model.YEAR, default=0.95)
-model.AvailabilityFactor = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0.95)
+model.CapacityFactor = Param(model.REGION, model.TECHNOLOGY, model.TIMESLICE, model.YEAR, default=1)
+model.AvailabilityFactor = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=1)
 model.OperationalLife = Param(model.REGION, model.TECHNOLOGY, default=1)
 model.ResidualCapacity = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0)
 model.InputActivityRatio = Param(model.REGION, model.TECHNOLOGY, model.FUEL, model.MODE_OF_OPERATION, model.YEAR, default=0)
