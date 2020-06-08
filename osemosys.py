@@ -228,7 +228,7 @@ model.DemandNeedingReserveMargin = Var(model.REGION,model.TIMESLICE, model.YEAR,
 #########			RE Gen Target				#############
 
 model.TotalREProductionAnnual = Var(model.REGION, model.YEAR, initialize=0.0)
-model.RETotalDemandOfTargetFuelAnnual = Var(model.REGION, model.YEAR, initialize=0.0)
+model.RETotalProductionOfTargetFuelAnnual = Var(model.REGION, model.YEAR, initialize=0.0)
 
 model.TotalTechnologyModelPeriodActivity = Var(model.REGION, model.TECHNOLOGY, initialize=0.0)
 
@@ -534,13 +534,13 @@ model.ModelPeriodEmissionsLimit = Constraint(model.REGION, model.EMISSION, rule=
 #########   		Reserve Margin Constraint	############## NTS: Should change demand for production
 
 def ReserveMargin_TechnologiesIncluded_rule(model,r,l,y):
-	return (sum((model.TotalAnnualCapacity[r,t,y]*model.ReserveMarginTagTechnology[r,t,y]*model.CapacityToActivityUnit[r,t]) for t in model.TECHNOLOGY) == model.TotalCapacityInReserveMargin[r,y])
-ReserveMargin_TechnologiesIncluded = Constraint(model.REGION, model.TIMESLICE, model.YEAR, rule=ReserveMargin_TechnologiesIncluded_rule)
+	return (sum((model.TotalCapacityAnnual[r,t,y]*model.ReserveMarginTagTechnology[r,t,y]*model.CapacityToActivityUnit[r,t]) for t in model.TECHNOLOGY) == model.TotalCapacityInReserveMargin[r,y])
+model.ReserveMargin_TechnologiesIncluded = Constraint(model.REGION, model.TIMESLICE, model.YEAR, rule=ReserveMargin_TechnologiesIncluded_rule)
 
 def ReserveMargin_FuelsIncluded_rule(model,r,l,y):
-	return sum((model.RateOfProduction[r,l,f,y]*model.ReserveMarginTagFuel) for f in model.FUEL) == model.DemandNeedingReserveMargin[r,l,y]
-ReserveMargin_FuelsIncluded = Constraint(model.REGION, model.TIMESLICE, model.YEAR, rule=ReserveMargin_FuelsIncluded_rule)
+	return sum((model.RateOfProduction[r,l,f,y]*model.ReserveMarginTagFuel[r,f,y]) for f in model.FUEL) == model.DemandNeedingReserveMargin[r,l,y]
+model.ReserveMargin_FuelsIncluded = Constraint(model.REGION, model.TIMESLICE, model.YEAR, rule=ReserveMargin_FuelsIncluded_rule)
 
 def ReserveMarginConstraint_rule(model,r,l,y):
 	return model.DemandNeedingReserveMargin[r,l,y]*model.ReserveMargin[r,y] <= model.TotalCapacityInReserveMargin[r,y]
-ReserveMarginConstraint = Constraint(model.REGION, model.TIMESLICE, model.YEAR, rule=ReserveMarginConstraint_rule)
+model.ReserveMarginConstraint = Constraint(model.REGION, model.TIMESLICE, model.YEAR, rule=ReserveMarginConstraint_rule)
