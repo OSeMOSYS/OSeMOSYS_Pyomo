@@ -17,14 +17,19 @@
 #   You may obtain a copy of the License at
 #
 #       http://www.apache.org/licenses/LICENSE-2.0
-
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# ============================================================================
 #
 #              			#########################################
 ######################			Model Definition				#############
 #              			#########################################
 #
 #
-
 from __future__ import division
 from pyomo.environ import *
 from pyomo.core import *
@@ -84,19 +89,19 @@ model.OutputActivityRatio = Param(model.REGION, model.TECHNOLOGY, model.FUEL, mo
 
 #########			Technology Costs			#############
 
-model.CapitalCost = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0)
-model.VariableCost = Param(model.REGION, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, default=0.00001)
+model.CapitalCost = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0.000001)
+model.VariableCost = Param(model.REGION, model.TECHNOLOGY, model.MODE_OF_OPERATION, model.YEAR, default=0.000001)
 model.FixedCost = Param(model.REGION, model.TECHNOLOGY, model.YEAR, default=0)
 
 #########           		Storage                 		#############
 
 model.TechnologyToStorage = Param(model.REGION, model.TECHNOLOGY, model.STORAGE, model.MODE_OF_OPERATION, default=0)
 model.TechnologyFromStorage = Param(model.REGION, model.TECHNOLOGY, model.STORAGE, model.MODE_OF_OPERATION, default=0)
-model.StorageLevelStart = Param(model.REGION, model.STORAGE, default=999)
-model.StorageMaxChargeRate = Param(model.REGION, model.STORAGE, default=99)
-model.StorageMaxDischargeRate = Param(model.REGION, model.STORAGE, default=99)
+model.StorageLevelStart = Param(model.REGION, model.STORAGE, default=0.0000001)
+model.StorageMaxChargeRate = Param(model.REGION, model.STORAGE, default=99999)
+model.StorageMaxDischargeRate = Param(model.REGION, model.STORAGE, default=99999)
 model.MinStorageCharge = Param(model.REGION, model.STORAGE, model.YEAR, default=0)
-model.OperationalLifeStorage = Param(model.REGION, model.STORAGE, default=99)
+model.OperationalLifeStorage = Param(model.REGION, model.STORAGE, default=0)
 model.CapitalCostStorage = Param(model.REGION, model.STORAGE, model.YEAR, default=0)
 model.ResidualStorageCapacity = Param(model.REGION, model.STORAGE, model.YEAR, default=0)
 
@@ -268,6 +273,14 @@ def TotalNewCapacity_1_rule(model,r,t,y):
 	return model.AccumulatedNewCapacity[r,t,y] == sum(model.NewCapacity[r,t,yy] for yy in model.YEAR if ((y-yy < model.OperationalLife[r,t]) and (y-yy >= 0)))
 model.TotalNewCapacity_1 = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalNewCapacity_1_rule)
 
+def TotalNewCapacity_2_rule(model, r, t, y):
+	if model.CapacityOfOneTechnologyUnit[r, t, y] != 0:
+		return model.CapacityOfOneTechnologyUnit[r, t, y]*model.NumberOfNewTechnologyUnits[r, t, y] == model.NewCapacity[r, t, y]
+	else:
+		return Constraint.Skip
+
+model.TotalNewCapacity_2 = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalNewCapacity_2_rule)
+
 def TotalAnnualCapacity_rule(model,r,t,y):
 	return model.AccumulatedNewCapacity[r,t,y] + model.ResidualCapacity[r,t,y] == model.TotalCapacityAnnual[r,t,y]
 model.TotalAnnualCapacity_constraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualCapacity_rule)
@@ -279,13 +292,6 @@ model.TotalActivityOfEachTechnology = Constraint(model.REGION, model.TECHNOLOGY,
 def ConstraintCapacity_rule(model,r,l,t,y):
 	return model.RateOfTotalActivity[r,t,l,y] <= model.TotalCapacityAnnual[r,t,y]*model.CapacityFactor[r,t,l,y]*model.CapacityToActivityUnit[r,t]
 model.ConstraintCapacity = Constraint(model.REGION, model.TIMESLICE, model.TECHNOLOGY, model.YEAR, rule=ConstraintCapacity_rule)
-
-# def TotalNewCapacity_2_rule(model,r,t,y):
-	# if model.CapacityOfOneTechnologyUnit != 0:
-		# return model.CapacityOfOneTechnologyUnit[r,t,y]*model.NumberOfNewTechnologyUnits[r,t,y] == model.NewCapacity[r,t,y]
-	# else:
-		# Constraint.Skip
-# model.TotalNewCapacity_2 = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalNewCapacity_2_rule)
 
 
 #########       	Capacity Adequacy B		 	#############
@@ -383,6 +389,167 @@ def ModelPeriodCostByRegion_rule(model,r):
 model.ModelPeriodCostByRegion_constraint = Constraint(model.REGION, rule=ModelPeriodCostByRegion_rule)
 
 
+#########			Storage equations	(15)		#############
+
+
+def RateOfStorageCharge_rule(model,r,s,ls,ld,lh,y,t,m):
+	if model.TechnologyToStorage[r,t,s,m]>0 :
+		return sum(model.RateOfActivity[r,l,t,m,y]*model.TechnologyToStorage[r,t,s,m]*model.Conversionls[l,ls]*model.Conversionld[l,ld]*model.Conversionlh[l,lh] for m in model.MODE_OF_OPERATION for l in model.TIMESLICE for t in model.TECHNOLOGY) == model.RateOfStorageCharge[r,s,ls,ld,lh,y]
+	else:
+		return Constraint.Skip
+model.RateOfStorageCharge_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, model.TECHNOLOGY, model.MODE_OF_OPERATION, rule=RateOfStorageCharge_rule)
+
+def RateOfStorageDischarge_rule(model,r,s,ls,ld,lh,y,t,m):
+	if 	model.TechnologyFromStorage[r,t,s,m]>0 :
+		return sum(model.RateOfActivity[r,l,t,m,y]*model.TechnologyFromStorage[r,t,s,m]*model.Conversionls[l,ls]*model.Conversionld[l,ld]*model.Conversionlh[l,lh] for m in model.MODE_OF_OPERATION for l in model.TIMESLICE for t in model.TECHNOLOGY) == model.RateOfStorageDischarge[r,s,ls,ld,lh,y]
+	else:
+		return Constraint.Skip
+model.RateOfStorageDischarge_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR,  model.TECHNOLOGY, model.MODE_OF_OPERATION, rule=RateOfStorageDischarge_rule)
+
+def NetChargeWithinYear_rule(model,r,s,ls,ld,lh,y):
+	return sum((model.RateOfStorageCharge[r,s,ls,ld,lh,y]-model.RateOfStorageDischarge[r,s,ls,ld,lh,y])*model.YearSplit[l,y]*model.Conversionls[l,ls]*model.Conversionld[l,ld]*model.Conversionlh[l,lh] for l in model.TIMESLICE )== model.NetChargeWithinYear[r,s,ls,ld,lh,y]
+model.NetChargeWithinYear_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=NetChargeWithinYear_rule)
+
+def NetChargeWithinDay_rule(model,r,s,ls,ld,lh,y):
+	return (model.RateOfStorageCharge[r,s,ls,ld,lh,y]-model.RateOfStorageDischarge[r,s,ls,ld,lh,y])*model.DaySplit[lh,y] == model.NetChargeWithinDay[r,s,ls,ld,lh,y]
+model.NetChargeWithinDay_constraint = Constraint(model.REGION,model.STORAGE,model.SEASON,model.DAYTYPE,model.DAILYTIMEBRACKET,model.YEAR, rule=NetChargeWithinDay_rule)
+
+def StorageLevelYearStart_rule(model, r , s, y):
+	if y == min(model.YEAR) :
+		return model.StorageLevelStart[r,s] == model.StorageLevelYearStart[r,s,y]
+	else:
+		return model.StorageLevelYearStart[r,s,y-1]+sum(model.NetChargeWithinYear[r,s,ls,ld,lh,y-1] for ls in model.SEASON for ld in model.DAYTYPE for lh in model.DAILYTIMEBRACKET) == model.StorageLevelYearStart[r,s,y]
+model.StorageLevelYearStart_constraint = Constraint(model.REGION, model.STORAGE, model.YEAR, rule=StorageLevelYearStart_rule)
+
+def StorageLevelYearFinish_rule(model, r, s, y):
+	if y < max(model.YEAR) :
+		return model.StorageLevelYearStart[r,s,y+1] == model.StorageLevelYearFinish[r,s,y]
+	else:
+		return model.StorageLevelYearStart[r,s,y]+sum(model.NetChargeWithinYear[r,s,ls,ld,lh,y-1] for ls in model.SEASON for ld in model.DAYTYPE for lh in model.DAILYTIMEBRACKET) == model.StorageLevelYearFinish[r,s,y]
+model.StorageLevelYearFinish_constraint = Constraint(model.REGION, model.STORAGE, model.YEAR, rule=StorageLevelYearFinish_rule)
+
+def StorageLevelSeasonStart_rule(model, r, s, ls, y):
+	if ls == min(model.SEASON):
+		return model.StorageLevelYearStart[r,s,y] == model.StorageLevelSeasonStart[r,s,ls,y]
+	else:
+		return model.StorageLevelSeasonStart[r,s,ls-1,y]+sum(model.NetChargeWithinYear[r,s,ls-1,ld,lh,y] for ld in model.DAYTYPE for lh in model.DAILYTIMEBRACKET) == model.StorageLevelSeasonStart[r,s,ls,y]
+model.StorageLevelSeasonStart_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.YEAR, rule= StorageLevelSeasonStart_rule)
+
+def StorageLevelDayTypeStart_rule(model, r, s, ls, ld, y):
+	if ld == min(model.DAYTYPE):
+		return model.StorageLevelSeasonStart[r,s,ls,y]==model.StorageLevelDayTypeStart[r,s,ls,ld,y]
+	else:
+		return model.StorageLevelDayTypeStart[r,s,ls,ld-1,y]+sum(model.NetChargeWithinDay[r,s,ls,ld-1,lh,y] for lh in model.DAILYTIMEBRACKET) == model.StorageLevelDayTypeStart[r,s,ls,ld,y]
+model.StorageLevelDayTypeStart_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.YEAR, rule=StorageLevelDayTypeStart_rule)
+
+def StorageLevelDayTypeFinish_rule(model, r, s, ls, ld, y):
+	if ld == max(model.DAYTYPE):
+		if ls == max(model.SEASON):
+			return model.StorageLevelYearFinish[r,s,y] == model.StorageLevelDayTypeFinish[r,s,ls,ld,y]
+		else:
+			return model.StorageLevelSeasonStart[r,s,ls+1,y] == model.StorageLevelDayTypeFinish[r,s,ls,ld,y]
+	else:
+		return model.StorageLevelDayTypeFinish[r,s,ls,ld+1,y]-sum(model.NetChargeWithinDay[r,s,ls,ld+1,lh,y] for lh in model.DAILYTIMEBRACKET)*model.DaysInDayType[ls,ld+1,y] == model.StorageLevelDayTypeFinish[r,s,ls,ld,y]
+model.StorageLevelDayTypeFinish_constraint=Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.YEAR, rule=StorageLevelDayTypeFinish_rule)
+
+
+#########			Storage constraints		(6)	#############
+
+
+def LowerLimit_1TimeBracket1InstanceOfDayType1week_rule(model, r, s, ls, ld, lh, y):
+	return 0 <= (model.StorageLevelDayTypeStart[r,s,ls,ld,y]+sum(model.NetChargeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh-lhlh>0)))-model.StorageLowerLimit[r,s,y]
+model.LowerLimit_1TimeBracket1InstanceOfDayType1week_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=LowerLimit_1TimeBracket1InstanceOfDayType1week_rule)
+
+def LowerLimit_EndDaylyTimeBracketLastInstanceOfDayType1Week_rule(model, r, s, ls, ld, lh, y):
+	if ld > min(model.DAYTYPE):
+		return 0 <= (model.StorageLevelDayTypeStart[r,s,ls,ld,y]-sum(model.NetChargeWithinDay[r,s,ls,ld-1,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if(lh-lhlh<0)))-model.StorageLowerLimit[r,s,y]
+	else:
+		return Constraint.Skip
+model.LowerLimit_EndDaylyTimeBracketLastInstanceOfDayType1Week_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=LowerLimit_EndDaylyTimeBracketLastInstanceOfDayType1Week_rule)
+
+def LowerLimit_EndDaylyTimeBracketLastInstanceOfDayTypeLastWeek_rule(model, r, s, ls, ld, lh, y):
+	return 0 <= (model.StorageLevelDayTypeFinish[r,s,ls,ld,y]-sum(model.NetChargeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh - lhlh < 0)))-model.StorageLowerLimit[r,s,y]
+model.LowerLimit_EndDaylyTimeBracketLastInstanceOfDayTypeLastWeek_constraint= Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=LowerLimit_EndDaylyTimeBracketLastInstanceOfDayTypeLastWeek_rule)
+
+def LowerLimit_1TimeBracket1InstanceOfDayTypeLastweek_rule(model, r, s, ls, ld, lh, y):
+	if ld> min(model.DAYTYPE):
+		return 0 <= (model.StorageLevelDayTypeFinish[r,s,ls,ld-1,y]+sum(model.NetChargeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh-lhlh>0)))-model.StorageLowerLimit[r,s,y]
+	else:
+		return Constraint.Skip
+model.LowerLimit_1TimeBracket1InstanceOfDayTypeLastweek_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=LowerLimit_1TimeBracket1InstanceOfDayTypeLastweek_rule)
+
+def UpperLimit_1TimeBracket1InstanceOfDayType1week_rule (model, r, s, ls, ld, lh, y):
+	return (model.StorageLevelDayTypeStart[r,s,ls,ld,y]+sum(model.NetChargeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh-lhlh>0)))-model.StorageUpperLimit[r,s,y] <= 0
+model.UpperLimit_1TimeBracket1InstanceOfDayType1week_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=UpperLimit_1TimeBracket1InstanceOfDayType1week_rule)
+
+def UpperLimit_EndDaylyTimeBracketLastInstanceOfDayType1Week_rule(model, r, s, ls, ld, lh, y):
+	if ld > min(model.DAYTYPE):
+		return (model.StorageLevelDayTypeStart[r,s,ls,ld,y]-sum(model.NetChargeWithinDay[r,s,ls,ld-1,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if(lh-lhlh<0)))-model.StorageUpperLimit[r,s,y] <= 0
+	else:
+		return Constraint.Skip
+model.UpperLimit_EndDaylyTimeBracketLastInstanceOfDayType1Week_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=UpperLimit_EndDaylyTimeBracketLastInstanceOfDayType1Week_rule)
+
+def UpperLimit_EndDaylyTimeBracketLastInstanceOfDayTypeLastWeek_rule(model, r, s, ls, ld, lh, y):
+	return (model.StorageLevelDayTypeFinish[r,s,ls,ld,y]-sum(model.NetChargeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh - lhlh < 0)))-model.StorageUpperLimit[r,s,y] <=0
+model.UpperLimit_EndDaylyTimeBracketLastInstanceOfDayTypeLastWeek_constraint= Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=UpperLimit_EndDaylyTimeBracketLastInstanceOfDayTypeLastWeek_rule)
+
+def UpperLimit_1TimeBracket1InstanceOfDayTypeLastweek_rule(model, r, s, ls, ld, lh, y):
+	if ld> min(model.DAYTYPE):
+		return 0 >= (model.StorageLevelDayTypeFinish[r,s,ls,ld-1,y]+sum(model.NetChargeWithinDay[r,s,ls,ld,lhlh,y] for lhlh in model.DAILYTIMEBRACKET if (lh-lhlh>0)))-model.StorageUpperLimit[r,s,y]
+	else:
+		return Constraint.Skip
+model.UpperLimit_1TimeBracket1InstanceOfDayTypeLastweek_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=UpperLimit_1TimeBracket1InstanceOfDayTypeLastweek_rule)
+
+def MaxChargeConstraint_rule(model,r,s,ls,ld,lh,y):
+	return model.RateOfStorageCharge[r,s,ls,ld,lh,y]<=model.StorageMaxChargeRate[r,s]
+model.MaxChargeConstraint_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=MaxChargeConstraint_rule)
+
+def MaxDischargeConstraint_rule(model,r,s,ls,ld,lh,y):
+	return model.RateOfStorageDischarge[r,s,ls,ld,lh,y]<=model.StorageMaxDischargeRate[r,s]
+model.MaxDischargeConstraint_constraint = Constraint(model.REGION, model.STORAGE, model.SEASON, model.DAYTYPE, model.DAILYTIMEBRACKET, model.YEAR, rule=MaxDischargeConstraint_rule)
+
+
+#########			Storage investments		(10)	#############
+
+
+def StorageUpperLimit_rule(model,r,s,y):
+	return model.AccumulatedNewStorageCapacity[r,s,y]+model.ResidualStorageCapacity[r,s,y] == model.StorageUpperLimit[r,s,y]
+model.StorageUpperLimit_constraint= Constraint(model.REGION, model.STORAGE, model.YEAR, rule=StorageUpperLimit_rule)
+
+def StorageLowerLimit_rule(model,r,s,y):
+	return model.MinStorageCharge[r,s,y]*model.StorageUpperLimit[r,s,y] == model.StorageLowerLimit[r,s,y]
+model.StorageLowerLimit_constraint = Constraint(model.REGION, model.STORAGE, model.YEAR, rule=StorageLowerLimit_rule)
+
+def TotalNewStorage_rule(model,r,s,y):
+	return sum(model.NewStorageCapacity[r,s,yy] for yy in model.YEAR if((y-yy< model.OperationalLifeStorage[r,s]) and (y-yy>=0)))== model.AccumulatedNewStorageCapacity[r,s,y]
+model.TotalNewStorage_constraint = Constraint(model.REGION, model.STORAGE, model.YEAR, rule=TotalNewStorage_rule)
+
+def UndiscountedCapitalInvestmentStorage_rule(model,r,s,y):
+	return model.CapitalCostStorage[r,s,y]*model.NewStorageCapacity[r,s,y]==model.CapitalInvestmentStorage[r,s,y]
+model.UndiscountedCapitalInvestmentStorage_constraint= Constraint(model.REGION, model.STORAGE, model.YEAR, rule=UndiscountedCapitalInvestmentStorage_rule)
+
+def DiscountingCapitalInvestmentStorage_rule(model,r,s,y):
+	return model.CapitalInvestmentStorage[r,s,y]/((1+model.DiscountRate[r])**(y-min(model.YEAR)))  == model.DiscountedCapitalInvestmentStorage[r,s,y]
+model.DiscountingCapitalInvestmentStorage_constraint=Constraint(model.REGION, model.STORAGE, model.YEAR, rule=DiscountingCapitalInvestmentStorage_rule)
+
+def SalvageValueStorageAtEndOfPeriod_rule(model,r,s,y):
+	if model.DepreciationMethod[r] == 1 and ((y + model.OperationalLifeStorage[r,s]-1) > max(model.YEAR)) and model.DiscountRate[r]>0:
+		return model.SalvageValueStorage[r,s,y] == model.CapitalInvestmentStorage[r,s,y]*(1-(((1+model.DiscountRate[r])**(max(model.YEAR)-y+1)-1)/((1+model.DiscountRate[r])**model.OperationalLifeStorage[r,s]-1)))
+	elif (model.DepreciationMethod[r] == 1 and ((y + model.OperationalLifeStorage[r,s]-1) > max(model.YEAR)) and model.DiscountRate[r] == 0) or (model.DepreciationMethod[r] == 2 and (y + model.OperationalLifeStorage[r,s]-1) > (max(model.YEAR))):
+		return model.SalvageValueStorage[r,s,y] == model.CapitalInvestmentStorage[r,s,y]*(1-(max(model.YEAR)-y+1)/model.OperationalLifeStorage[r,s])
+	else:
+		return model.SalvageValueStorage[r,s,y] == 0
+model.SalvageValueStorageAtEndOfPeriod_constraint=Constraint(model.REGION, model.STORAGE, model.YEAR, rule=SalvageValueStorageAtEndOfPeriod_rule)
+
+def SalvageValueStorageDiscountedToStartYear_rule(model,r,s,y):
+	return model.SalvageValueStorage[r,s,y]/((1+model.DiscountRate[r])**(max(model.YEAR)-min(model.YEAR)+1))==model.DiscountedSalvageValueStorage[r,s,y]
+model.SalvageValueDiscountedToStartYear_constraint = Constraint(model.REGION, model.STORAGE, model.YEAR, rule=SalvageValueStorageDiscountedToStartYear_rule)
+
+def TotalDiscountedCostByStorage_rule(model,r,s,y):
+	return model.DiscountedCapitalInvestmentStorage[r,s,y]-model.DiscountedSalvageValueStorage[r,s,y] == model.TotalDiscountedStorageCost[r,s,y]
+model.TotalDiscountedCostByStorage_constraint= Constraint(model.REGION, model.STORAGE, model.YEAR, rule=TotalDiscountedCostByStorage_rule)
+
+
 #########       	Capital Costs 		     	#############
 
 def UndiscountedCapitalInvestment_rule(model,r,t,y):
@@ -420,7 +587,7 @@ def TotalDiscountedCostByTechnology_rule(model,r,t,y):
 model.TotalDiscountedCostByTechnology_constraint = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalDiscountedCostByTechnology_rule)
 
 def TotalDiscountedCost_rule(model,r,y):
-	return sum(model.TotalDiscountedCostByTechnology[r,t,y] for t in model.TECHNOLOGY) == model.TotalDiscountedCost[r,y]
+	return sum(model.TotalDiscountedCostByTechnology[r,t,y] for t in model.TECHNOLOGY) + sum(model.TotalDiscountedStorageCost[r,s,y] for s in model.STORAGE) == model.TotalDiscountedCost[r,y]
 model.TotalDiscountedCost_constraint = Constraint(model.REGION, model.YEAR, rule=TotalDiscountedCost_rule)
 
 #########      		Total Capacity Constraints 	##############
@@ -460,6 +627,7 @@ model.TotalAnnualMinNewCapacityConstraint = Constraint(model.REGION, model.TECHN
 
 #########   		Annual Activity Constraints	##############
 
+
 def TotalAnnualTechnologyActivity_rule(model,r,t,y):
 	return sum(model.RateOfTotalActivity[r,t,l,y]*model.YearSplit[l,y] for l in model.TIMESLICE) == model.TotalTechnologyAnnualActivity[r,t,y]
 model.TotalAnnualTechnologyActivity = Constraint(model.REGION, model.TECHNOLOGY, model.YEAR, rule=TotalAnnualTechnologyActivity_rule)
@@ -474,6 +642,7 @@ model.TotalAnnualTechnologyActivityLowerlimit = Constraint(model.REGION, model.T
 
 
 #########    		Total Activity Constraints 	##############
+
 
 def TotalModelHorizonTechnologyActivity_rule(model,r,t):
 	return sum(model.TotalTechnologyAnnualActivity[r,t,y] for y in model.YEAR) == model.TotalTechnologyModelPeriodActivity[r,t]
@@ -532,6 +701,7 @@ model.ModelPeriodEmissionsLimit = Constraint(model.REGION, model.EMISSION, rule=
 
 
 #########   		Reserve Margin Constraint	############## NTS: Should change demand for production
+
 
 def ReserveMargin_TechnologiesIncluded_rule(model,r,l,y):
 	return (sum((model.TotalCapacityAnnual[r,t,y]*model.ReserveMarginTagTechnology[r,t,y]*model.CapacityToActivityUnit[r,t]) for t in model.TECHNOLOGY) == model.TotalCapacityInReserveMargin[r,y])
