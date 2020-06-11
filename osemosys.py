@@ -2186,7 +2186,7 @@ model.ReserveMarginConstraint = Constraint(
 def FuelProductionByTechnologyAnnual_rule(model, r, t, f, y):
 	return (
 		sum(
-			model.ProductionByTechnology[r, t, f, y, l]
+			model.ProductionByTechnology[r, l, t, f, y]
 			for l in model.TIMESLICE
 		)
 		== model.ProductionByTechnologyAnnual[r, t, f, y]
@@ -2218,9 +2218,9 @@ model.TechIncluded = Constraint(
 def FuelIncluded_rule(model, r, y):
 	return (
 		sum(
-			model.RateOfProduction[r, f, y, l]
+			model.RateOfProduction[r, l, f, y]
 			* model.RETagFuel[r, f, y]
-			* model.YearSplit[y, l]
+			* model.YearSplit[l, y]
 			for f in model.FUEL
 			for l in model.TIMESLICE
 		)
@@ -2249,8 +2249,8 @@ model.EnergyConstraint = Constraint(
 def FuelUseByTechnologyAnnual_rule(model, r, t, f, y):
 	return (
 		sum(
-			model.RateOfUseByTechnology[r, t, f, y, l]*
-			model.YearSplit[y, l]
+			model.RateOfUseByTechnology[r, l, t, f, y]*
+			model.YearSplit[l, y]
 			for l in model.TIMESLICE
 		)
 		== model.UseByTechnologyAnnual[r, t, f, y]
@@ -2260,4 +2260,5 @@ def FuelUseByTechnologyAnnual_rule(model, r, t, f, y):
 model.FuelUseByTechnologyAnnual = Constraint(
 	model.REGION, model.TECHNOLOGY, model.FUEL, model.YEAR, rule=FuelUseByTechnologyAnnual_rule
 )
+
 
