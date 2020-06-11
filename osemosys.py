@@ -2178,3 +2178,86 @@ def ReserveMarginConstraint_rule(model, r, l, y):
 model.ReserveMarginConstraint = Constraint(
     model.REGION, model.TIMESLICE, model.YEAR, rule=ReserveMarginConstraint_rule
 )
+
+
+#########   		RE Production Target    	##############
+
+
+def FuelProductionByTechnologyAnnual_rule(model, r, t, f, y):
+	return (
+		sum(
+			model.ProductionByTechnology[r, t, f, y, l]
+			for l in model.TIMESLICE
+		)
+		== model.ProductionByTechnologyAnnual[r, t, f, y]
+	)
+	
+	
+model.FuelProductionByTechnologyAnnual = Constraint(
+	model.REGION, model.TECHNOLOGY, model.FUEL, model.YEAR, rule=FuelProductionByTechnologyAnnual_rule
+)
+
+
+def TechIncluded_rule(model, r, y):
+	return (
+		sum(
+			model.ProductionByTechnologyAnnual[r, t, f, y]
+			* model.RETagTechnology[r, t, y]
+			for t in model.TECHNOLOGY
+			for f in model.FUEL
+		)
+		== model.TotalREProductionAnnual[r, y]
+	)
+
+
+model.TechIncluded = Constraint(
+	model.REGION, model.YEAR, rule=TechIncluded_rule
+)
+
+
+def FuelIncluded_rule(model, r, y):
+	return (
+		sum(
+			model.RateOfProduction[r, f, y, l]
+			* model.RETagFuel[r, f, y]
+			* model.YearSplit[y, l]
+			for f in model.FUEL
+			for l in model.TIMESLICE
+		)
+		== model.RETotalProductionOfTargetFuelAnnual[r, y]
+	)
+
+
+model.FuelIncluded = Constraint(
+	model.REGION, model.YEAR, rule=FuelIncluded_rule
+)
+
+
+def EnergyConstraint_rule(model, r, y):
+	return (
+		model.REMinProductionTarget[r, y]
+		* model.RETotalProductionOfTargetFuelAnnual[r, y]
+		<= model.TotalREProductionAnnual[r, y]
+	)
+
+
+model.EnergyConstraint = Constraint(
+	model.REGION, model.YEAR, rule=EnergyConstraint_rule
+)
+
+
+def FuelUseByTechnologyAnnual_rule(model, r, t, f, y):
+	return (
+		sum(
+			model.RateOfUseByTechnology[r, t, f, y, l]*
+			model.YearSplit[y, l]
+			for l in model.TIMESLICE
+		)
+		== model.UseByTechnologyAnnual[r, t, f, y]
+	)
+
+
+model.FuelUseByTechnologyAnnual = Constraint(
+	model.REGION, model.TECHNOLOGY, model.FUEL, model.YEAR, rule=FuelUseByTechnologyAnnual_rule
+)
+
