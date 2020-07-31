@@ -1173,7 +1173,7 @@ def StorageLevelYearFinish_rule(model, r, s, y):
         return (
             model.StorageLevelYearStart[r, s, y]
             + sum(
-                model.NetChargeWithinYear[r, s, ls, ld, lh, y - 1]
+                model.NetChargeWithinYear[r, s, ls, ld, lh, y]
                 for ls in model.SEASON
                 for ld in model.DAYTYPE
                 for lh in model.DAILYTIMEBRACKET
