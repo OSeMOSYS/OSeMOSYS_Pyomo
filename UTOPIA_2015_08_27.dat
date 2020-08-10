@@ -102,8 +102,6 @@ set YEAR :=
 # ;
 # param ModelPeriodExogenousEmission := 0
 # ;
-# param OperationalLifeStorage := 1
-# ;
 # param StorageLevelStart := 0
 # ;
 # param StorageMaxChargeRate := 99
@@ -178,6 +176,9 @@ param OperationalLife  :=
   UTOPIA TXD  15
   UTOPIA TXE  15
   UTOPIA TXG  15
+;
+param OperationalLifeStorage :=
+  UTOPIA DAM 1
 ;
 param TechnologyFromStorage  :=
   UTOPIA E51 DAM 1  1
